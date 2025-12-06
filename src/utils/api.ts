@@ -3,7 +3,23 @@
  */
 
 // @ts-ignore - Vite environment variables
-const API_URL = (import.meta.env?.VITE_API_URL as string) || 'http://localhost:3001/api';
+// Detectar ambiente e usar URL apropriada
+const getApiUrl = () => {
+  // Em produção (Firebase Hosting), usar a mesma origem (Firebase Functions)
+  if (typeof window !== 'undefined') {
+    if (window.location.hostname.includes('gastopessoal-ac9aa') || 
+        window.location.hostname.includes('firebaseapp.com') ||
+        window.location.hostname.includes('web.app')) {
+      return '/api'; // Usa o mesmo domínio (Firebase Functions via rewrite)
+    }
+  }
+  
+  // Em desenvolvimento, usar localhost ou variável de ambiente
+  // @ts-ignore - Vite environment variables
+  return (import.meta.env?.VITE_API_URL as string) || 'http://localhost:3001/api';
+};
+
+const API_URL = getApiUrl();
 
 // Obter token do localStorage
 const getToken = (): string | null => {

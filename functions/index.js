@@ -1,25 +1,22 @@
+import { onRequest } from 'firebase-functions/v2/https';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
+import admin from 'firebase-admin';
+
+// Inicializar Firebase Admin
+admin.initializeApp();
+
+// Importar rotas
 import authRoutes from './routes/auth.js';
 import transactionsRoutes from './routes/transactions.js';
 import budgetsRoutes from './routes/budgets.js';
 import goalsRoutes from './routes/goals.js';
-import db from './database.js';
-
-dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3001;
 
-// Middlewares
+// CORS configurado para aceitar requisições do Firebase Hosting
 const corsOptions = {
-  origin: [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'https://gastopessoal-ac9aa.web.app',
-    'https://gastopessoal-ac9aa.firebaseapp.com',
-  ],
+  origin: true, // Aceita todas as origens (Firebase Functions gerencia CORS)
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -39,17 +36,12 @@ app.use('/api/transactions', transactionsRoutes);
 app.use('/api/budgets', budgetsRoutes);
 app.use('/api/goals', goalsRoutes);
 
-// Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  console.log(`📊 Banco de dados inicializado`);
-  console.log(`🔗 API disponível em http://localhost:${PORT}`);
-});
-
-// Graceful shutdown
-process.on('SIGINT', () => {
-  db.close();
-  console.log('\n👋 Servidor encerrado');
-  process.exit(0);
-});
+// Exportar como Cloud Function
+export const api = onRequest(
+  {
+    cors: true, // Firebase Functions gerencia CORS automaticamente
+    region: 'us-central1',
+  },
+  app
+);
 
