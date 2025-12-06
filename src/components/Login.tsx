@@ -25,13 +25,19 @@ const Login: React.FC = () => {
 
     try {
       const response = await authAPI.login(email, password);
-      localStorage.setItem('authToken', response.token);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      setUser(response.user);
-      showNotification('Login realizado com sucesso!', 'success');
-      navigate('/');
+      
+      if (response && response.token && response.user) {
+        localStorage.setItem('authToken', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        setUser(response.user);
+        showNotification('Login realizado com sucesso!', 'success');
+        navigate('/');
+      } else {
+        throw new Error('Resposta inválida do servidor');
+      }
     } catch (error: any) {
-      showNotification(error.message || 'Erro ao fazer login', 'error');
+      console.error('Erro no login:', error);
+      showNotification(error.message || 'Erro ao fazer login. Verifique se o servidor está rodando.', 'error');
     } finally {
       setLoading(false);
     }
@@ -44,6 +50,7 @@ const Login: React.FC = () => {
     try {
       if (!name || !email || !password) {
         showNotification('Preencha todos os campos obrigatórios', 'error');
+        setLoading(false);
         return;
       }
 
@@ -55,13 +62,18 @@ const Login: React.FC = () => {
         partnerId: userType === 'couple' && partnerName ? undefined : undefined,
       });
 
-      localStorage.setItem('authToken', response.token);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      setUser(response.user);
-      showNotification('Conta criada com sucesso!', 'success');
-      navigate('/');
+      if (response && response.token && response.user) {
+        localStorage.setItem('authToken', response.token);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        setUser(response.user);
+        showNotification('Conta criada com sucesso!', 'success');
+        navigate('/');
+      } else {
+        throw new Error('Resposta inválida do servidor');
+      }
     } catch (error: any) {
-      showNotification(error.message || 'Erro ao criar conta', 'error');
+      console.error('Erro no registro:', error);
+      showNotification(error.message || 'Erro ao criar conta. Verifique se o servidor está rodando.', 'error');
     } finally {
       setLoading(false);
     }

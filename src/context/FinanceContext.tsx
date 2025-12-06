@@ -33,26 +33,39 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
         const token = localStorage.getItem('authToken');
 
         if (savedUser && token) {
-          const parsedUser = JSON.parse(savedUser);
-          
-          // Verificar se o token ainda é válido
-          const verifyResult = await authAPI.verify();
-          if (verifyResult.valid && parsedUser && parsedUser.id && parsedUser.name) {
-            setUser(parsedUser);
+          try {
+            const parsedUser = JSON.parse(savedUser);
             
-            // Carregar transações e orçamentos do backend
-            try {
-              const [transactionsData, budgetsData] = await Promise.all([
-                transactionsAPI.getAll(),
-                budgetsAPI.getAll(),
-              ]);
-              setTransactions(transactionsData);
-              setBudgets(budgetsData);
-            } catch (error) {
-              console.error('Erro ao carregar dados do backend:', error);
+            // Verificar se o token ainda é válido
+            const verifyResult = await authAPI.verify();
+            if (verifyResult && verifyResult.valid && parsedUser && parsedUser.id && parsedUser.name) {
+              setUser(parsedUser);
+              
+              // Carregar transações e orçamentos do backend
+              try {
+                const [transactionsData, budgetsData] = await Promise.all([
+                  transactionsAPI.getAll(),
+                  budgetsAPI.getAll(),
+                ]);
+                
+                if (Array.isArray(transactionsData)) {
+                  setTransactions(transactionsData);
+                }
+                if (Array.isArray(budgetsData)) {
+                  setBudgets(budgetsData);
+                }
+              } catch (error) {
+                console.error('Erro ao carregar dados do backend:', error);
+                // Continuar mesmo se não conseguir carregar dados
+              }
+            } else {
+              // Token inválido, limpar dados
+              localStorage.removeItem('user');
+              localStorage.removeItem('authToken');
+              setUser(null);
             }
-          } else {
-            // Token inválido, limpar dados
+          } catch (parseError) {
+            console.error('Erro ao fazer parse do usuário:', parseError);
             localStorage.removeItem('user');
             localStorage.removeItem('authToken');
             setUser(null);
@@ -60,9 +73,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
         }
       } catch (error) {
         console.error('Erro ao verificar autenticação:', error);
-        localStorage.removeItem('user');
-        localStorage.removeItem('authToken');
-        setUser(null);
+        // Não limpar dados em caso de erro de rede, apenas logar
       }
     };
 
