@@ -9,32 +9,48 @@ const __dirname = path.dirname(__filename);
 
 // Inicializar Firebase Admin
 let db;
+let initialized = false;
 
 try {
-  // Tentar usar credenciais do arquivo de serviço
-  const serviceAccountPath = path.join(__dirname, 'firebase-service-account.json');
-  
-  if (fs.existsSync(serviceAccountPath)) {
-    const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
-  } else {
-    // Usar variáveis de ambiente ou inicialização padrão
-    if (process.env.FIREBASE_PROJECT_ID) {
+  // Verificar se já foi inicializado
+  if (admin.apps.length === 0) {
+    // Tentar usar credenciais do arquivo de serviço
+    const serviceAccountPath = path.join(__dirname, 'firebase-service-account.json');
+    
+    if (fs.existsSync(serviceAccountPath)) {
+      const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
       admin.initializeApp({
-        projectId: process.env.FIREBASE_PROJECT_ID,
+        credential: admin.credential.cert(serviceAccount),
       });
+      initialized = true;
     } else {
-      // Inicialização padrão (usa Application Default Credentials)
-      admin.initializeApp();
+      // Usar variáveis de ambiente ou inicialização padrão
+      if (process.env.FIREBASE_PROJECT_ID) {
+        admin.initializeApp({
+          projectId: process.env.FIREBASE_PROJECT_ID,
+        });
+        initialized = true;
+      } else {
+        // Tentar usar Application Default Credentials (para produção no GCP)
+        try {
+          admin.initializeApp();
+          initialized = true;
+        } catch (initError) {
+          console.warn('⚠️  Não foi possível inicializar Firestore. Usando fallback.');
+          throw initError;
+        }
+      }
     }
+  } else {
+    initialized = true;
   }
   
-  db = admin.firestore();
-  console.log('✅ Firestore inicializado com sucesso');
+  if (initialized) {
+    db = admin.firestore();
+    console.log('✅ Firestore inicializado com sucesso');
+  }
 } catch (error) {
-  console.error('❌ Erro ao inicializar Firestore:', error);
+  console.warn('⚠️  Firestore não disponível:', error.message);
   throw error;
 }
 
@@ -275,4 +291,3 @@ const firestoreDB = {
 };
 
 export default firestoreDB;
-
