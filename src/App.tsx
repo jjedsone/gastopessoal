@@ -58,7 +58,7 @@ const App: React.FC = () => {
     <ThemeProvider>
       <NotificationProvider>
         <FinanceProvider>
-          <Router>
+          <Router future={{ v7_relativeSplatPath: true }}>
             <AppRoutes />
           </Router>
         </FinanceProvider>
