@@ -54,9 +54,9 @@ const safeJsonParse = async (response: Response): Promise<any> => {
              window.location.hostname.includes('web.app'));
           
           if (isProduction) {
-            throw new Error('Firebase Functions não estão disponíveis. Para usar o app em produção, você precisa fazer deploy das Functions (requer plano Blaze) ou usar o servidor local. Veja DEPLOY_FUNCTIONS.md para mais informações.');
+            throw new Error('Firebase Functions não estão disponíveis. Para usar o app em produção, você precisa fazer deploy das Functions (requer plano Blaze) ou usar o servidor local. Veja SOLUCAO_404.md para mais informações. Para desenvolvimento, inicie o servidor local: cd server && npm start');
           } else {
-            throw new Error('Servidor não está disponível. Verifique se o servidor backend está rodando em http://localhost:3001');
+            throw new Error('Servidor não está disponível. Verifique se o servidor backend está rodando em http://localhost:3001. Para iniciar: cd server && npm start');
           }
         }
       
