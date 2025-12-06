@@ -2,7 +2,8 @@
  * Cliente API para comunicação com o backend
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// @ts-ignore - Vite environment variables
+const API_URL = (import.meta.env?.VITE_API_URL as string) || 'http://localhost:3001/api';
 
 // Obter token do localStorage
 const getToken = (): string | null => {
