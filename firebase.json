@@ -1,5 +1,7 @@
 {
   "firestore": {
+    "database": "(default)",
+    "location": "nam5",
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
@@ -18,7 +20,7 @@
     ],
     "headers": [
       {
-        "source": "**/*.@(js|css)",
+        "source": "**/*.@(js|css|jpg|jpeg|gif|png|svg|woff|woff2|ttf|eot)",
         "headers": [
           {
             "key": "Cache-Control",
