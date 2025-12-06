@@ -39,12 +39,12 @@ router.post('/', async (req, res) => {
     const id = `goal_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const createdAt = new Date().toISOString();
 
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO financial_goals (id, userId, title, description, targetAmount, currentAmount, deadline, category, isCompleted, createdAt)
       VALUES (?, ?, ?, ?, ?, 0, ?, ?, 0, ?)
     `).run(id, req.user.id, title, description || null, targetAmount, deadline, category, createdAt);
 
-    const goal = db.prepare('SELECT * FROM financial_goals WHERE id = ?').get(id);
+    const goal = await db.prepare('SELECT * FROM financial_goals WHERE id = ?').get(id);
     res.status(201).json({
       ...goal,
       isCompleted: Boolean(goal.isCompleted),
