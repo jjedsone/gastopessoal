@@ -5,12 +5,18 @@
 // @ts-ignore - Vite environment variables
 // Detectar ambiente e usar URL apropriada
 const getApiUrl = () => {
-  // Em produção (Firebase Hosting), usar a mesma origem (Firebase Functions)
+  // Em produção (Firebase Hosting), tentar usar Firebase Functions
+  // Se não disponível, usar servidor local (para desenvolvimento)
   if (typeof window !== 'undefined') {
-    if (window.location.hostname.includes('gastopessoal-ac9aa') || 
-        window.location.hostname.includes('firebaseapp.com') ||
-        window.location.hostname.includes('web.app')) {
-      return '/api'; // Usa o mesmo domínio (Firebase Functions via rewrite)
+    const hostname = window.location.hostname;
+    
+    // Verificar se está em produção (Firebase Hosting)
+    if (hostname.includes('gastopessoal-ac9aa') || 
+        hostname.includes('firebaseapp.com') ||
+        hostname.includes('web.app')) {
+      // Tentar usar Firebase Functions primeiro
+      // Se der erro 404, o código vai tratar e sugerir servidor local
+      return '/api';
     }
   }
   
@@ -38,8 +44,22 @@ const safeJsonParse = async (response: Response): Promise<any> => {
   
   if (!isJsonResponse(contentType)) {
     const text = await response.text();
-    // Verificar se é HTML
+    // Verificar se é HTML (404 do Firebase)
     if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+      // Verificar se é erro 404 do Firebase (Functions não deployadas)
+      if (response.status === 404 && text.includes('404 Page not found')) {
+        const isProduction = typeof window !== 'undefined' && 
+          (window.location.hostname.includes('gastopessoal-ac9aa') || 
+           window.location.hostname.includes('firebaseapp.com') ||
+           window.location.hostname.includes('web.app'));
+        
+        if (isProduction) {
+          throw new Error('Firebase Functions não estão disponíveis. Por favor, inicie o servidor local em http://localhost:3001 ou configure as Firebase Functions.');
+        } else {
+          throw new Error('Servidor não está disponível. Verifique se o servidor backend está rodando em http://localhost:3001');
+        }
+      }
+      
       console.error('Servidor retornou HTML em vez de JSON. Possíveis causas:');
       console.error('1. Servidor não está rodando');
       console.error('2. URL incorreta');

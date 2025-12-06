@@ -30,11 +30,12 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Servidor funcionando' });
 });
 
-// Rotas
-app.use('/api/auth', authRoutes);
-app.use('/api/transactions', transactionsRoutes);
-app.use('/api/budgets', budgetsRoutes);
-app.use('/api/goals', goalsRoutes);
+// Rotas - Firebase Functions já adiciona /api no rewrite
+// Então as rotas devem ser sem /api
+app.use('/auth', authRoutes);
+app.use('/transactions', transactionsRoutes);
+app.use('/budgets', budgetsRoutes);
+app.use('/goals', goalsRoutes);
 
 // Exportar como Cloud Function
 export const api = onRequest(
