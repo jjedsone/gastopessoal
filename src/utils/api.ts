@@ -26,6 +26,39 @@ const getToken = (): string | null => {
   return localStorage.getItem('authToken');
 };
 
+// Função auxiliar para verificar se a resposta é JSON
+const isJsonResponse = (contentType: string | null): boolean => {
+  if (!contentType) return false;
+  return contentType.includes('application/json') || contentType.includes('text/json');
+};
+
+// Função auxiliar para ler resposta de forma segura
+const safeJsonParse = async (response: Response): Promise<any> => {
+  const contentType = response.headers.get('content-type');
+  
+  if (!isJsonResponse(contentType)) {
+    const text = await response.text();
+    // Verificar se é HTML
+    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+      console.error('Servidor retornou HTML em vez de JSON. Possíveis causas:');
+      console.error('1. Servidor não está rodando');
+      console.error('2. URL incorreta');
+      console.error('3. Erro de roteamento');
+      throw new Error('Servidor não está disponível ou retornou resposta inválida. Verifique se o servidor backend está rodando.');
+    }
+    throw new Error(`Resposta inválida do servidor (tipo: ${contentType}). Esperado JSON.`);
+  }
+  
+  try {
+    return await response.json();
+  } catch (parseError) {
+    const text = await response.text();
+    console.error('Erro ao fazer parse do JSON:', parseError);
+    console.error('Resposta recebida:', text.substring(0, 500));
+    throw new Error('Erro ao processar resposta do servidor.');
+  }
+};
+
 // Fazer requisição autenticada
 const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
   const token = getToken();
@@ -42,14 +75,6 @@ const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
       headers,
     });
 
-    // Verificar se a resposta é JSON
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      const text = await response.text();
-      console.error('Resposta não é JSON:', text.substring(0, 200));
-      throw new Error('Servidor retornou resposta inválida. Verifique se o servidor está rodando.');
-    }
-
     if (response.status === 401) {
       // Token inválido ou expirado
       localStorage.removeItem('authToken');
@@ -59,14 +84,25 @@ const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
     }
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Erro desconhecido' }));
-      throw new Error(error.error || `Erro ${response.status}: ${response.statusText}`);
+      // Tentar ler erro como JSON, mas tratar se não for
+      try {
+        const errorData = await safeJsonParse(response);
+        throw new Error(errorData.error || `Erro ${response.status}: ${response.statusText}`);
+      } catch (error: any) {
+        if (error.message.includes('Servidor não está disponível')) {
+          throw error;
+        }
+        throw new Error(`Erro ${response.status}: ${response.statusText}`);
+      }
     }
 
-    return response.json();
+    return await safeJsonParse(response);
   } catch (error: any) {
     if (error instanceof TypeError && error.message.includes('fetch')) {
       throw new Error('Não foi possível conectar ao servidor. Verifique se o servidor está rodando.');
+    }
+    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+      throw new Error('Erro de rede. Verifique sua conexão e se o servidor está rodando.');
     }
     throw error;
   }
@@ -82,23 +118,25 @@ export const authAPI = {
         body: JSON.stringify(data),
       });
 
-      // Verificar se a resposta é JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        console.error('Resposta não é JSON:', text.substring(0, 200));
-        throw new Error('Servidor retornou resposta inválida. Verifique se o servidor está rodando.');
-      }
-
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: `Erro ${response.status}` }));
-        throw new Error(error.error || 'Erro ao criar conta');
+        try {
+          const errorData = await safeJsonParse(response);
+          throw new Error(errorData.error || 'Erro ao criar conta');
+        } catch (error: any) {
+          if (error.message.includes('Servidor não está disponível')) {
+            throw error;
+          }
+          throw new Error(`Erro ${response.status} ao criar conta`);
+        }
       }
 
-      return response.json();
+      return await safeJsonParse(response);
     } catch (error: any) {
       if (error instanceof TypeError && error.message.includes('fetch')) {
         throw new Error('Não foi possível conectar ao servidor. Verifique se o servidor está rodando em http://localhost:3001');
+      }
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        throw new Error('Erro de rede. Verifique sua conexão e se o servidor está rodando.');
       }
       throw error;
     }
@@ -112,23 +150,25 @@ export const authAPI = {
         body: JSON.stringify({ email, password }),
       });
 
-      // Verificar se a resposta é JSON
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        console.error('Resposta não é JSON:', text.substring(0, 200));
-        throw new Error('Servidor retornou resposta inválida. Verifique se o servidor está rodando.');
-      }
-
       if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: `Erro ${response.status}` }));
-        throw new Error(error.error || 'Erro ao fazer login');
+        try {
+          const errorData = await safeJsonParse(response);
+          throw new Error(errorData.error || 'Erro ao fazer login');
+        } catch (error: any) {
+          if (error.message.includes('Servidor não está disponível')) {
+            throw error;
+          }
+          throw new Error(`Erro ${response.status} ao fazer login`);
+        }
       }
 
-      return response.json();
+      return await safeJsonParse(response);
     } catch (error: any) {
       if (error instanceof TypeError && error.message.includes('fetch')) {
         throw new Error('Não foi possível conectar ao servidor. Verifique se o servidor está rodando em http://localhost:3001');
+      }
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        throw new Error('Erro de rede. Verifique sua conexão e se o servidor está rodando.');
       }
       throw error;
     }
@@ -143,13 +183,17 @@ export const authAPI = {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // Verificar se a resposta é JSON
+      // Se não for JSON, retornar inválido silenciosamente
       const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
+      if (!isJsonResponse(contentType)) {
         return { valid: false };
       }
 
-      return response.json();
+      if (!response.ok) {
+        return { valid: false };
+      }
+
+      return await safeJsonParse(response);
     } catch {
       return { valid: false };
     }
