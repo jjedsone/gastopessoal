@@ -20,7 +20,7 @@ router.post('/register', async (req, res) => {
     }
 
     // Verificar se email já existe
-    const existingUser = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+    const existingUser = await db.prepare('SELECT id FROM users WHERE email = ?').get(email);
     if (existingUser) {
       return res.status(400).json({ error: 'Email já está em uso' });
     }
@@ -32,7 +32,7 @@ router.post('/register', async (req, res) => {
     const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const createdAt = new Date().toISOString();
 
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO users (id, name, email, password, type, partnerId, createdAt)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run(userId, name, email, hashedPassword, type, partnerId || null, createdAt);
@@ -68,7 +68,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Buscar usuário
-    const user = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+    const user = await db.prepare('SELECT * FROM users WHERE email = ?').get(email);
     if (!user) {
       return res.status(401).json({ error: 'Email ou senha incorretos' });
     }

@@ -7,9 +7,9 @@ const router = express.Router();
 router.use(authenticateToken);
 
 // Listar orçamentos
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const budgets = db.prepare(`
+    const budgets = await db.prepare(`
       SELECT * FROM budgets 
       WHERE userId = ? 
       ORDER BY createdAt DESC
@@ -23,7 +23,7 @@ router.get('/', (req, res) => {
 });
 
 // Criar orçamento
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { category, limit, period } = req.body;
 
@@ -34,12 +34,12 @@ router.post('/', (req, res) => {
     const id = `budget_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const createdAt = new Date().toISOString();
 
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO budgets (id, userId, category, limit, spent, period, createdAt)
       VALUES (?, ?, ?, ?, 0, ?, ?)
     `).run(id, req.user.id, category, limit, period, createdAt);
 
-    const budget = db.prepare('SELECT * FROM budgets WHERE id = ?').get(id);
+    const budget = await db.prepare('SELECT * FROM budgets WHERE id = ?').get(id);
     res.status(201).json(budget);
   } catch (error) {
     console.error('Erro ao criar orçamento:', error);
@@ -48,23 +48,23 @@ router.post('/', (req, res) => {
 });
 
 // Atualizar orçamento
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { category, limit, spent, period } = req.body;
 
-    const existing = db.prepare('SELECT id FROM budgets WHERE id = ? AND userId = ?').get(id, req.user.id);
+    const existing = await db.prepare('SELECT id FROM budgets WHERE id = ? AND userId = ?').get(id, req.user.id);
     if (!existing) {
       return res.status(404).json({ error: 'Orçamento não encontrado' });
     }
 
-    db.prepare(`
+    await db.prepare(`
       UPDATE budgets 
       SET category = ?, limit = ?, spent = ?, period = ?
       WHERE id = ? AND userId = ?
     `).run(category, limit, spent || 0, period, id, req.user.id);
 
-    const budget = db.prepare('SELECT * FROM budgets WHERE id = ?').get(id);
+    const budget = await db.prepare('SELECT * FROM budgets WHERE id = ?').get(id);
     res.json(budget);
   } catch (error) {
     console.error('Erro ao atualizar orçamento:', error);
@@ -73,11 +73,11 @@ router.put('/:id', (req, res) => {
 });
 
 // Deletar orçamento
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const result = db.prepare('DELETE FROM budgets WHERE id = ? AND userId = ?').run(id, req.user.id);
+    const result = await db.prepare('DELETE FROM budgets WHERE id = ? AND userId = ?').run(id, req.user.id);
     
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Orçamento não encontrado' });

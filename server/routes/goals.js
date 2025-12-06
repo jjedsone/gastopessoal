@@ -7,9 +7,9 @@ const router = express.Router();
 router.use(authenticateToken);
 
 // Listar metas
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const goals = db.prepare(`
+    const goals = await db.prepare(`
       SELECT * FROM financial_goals 
       WHERE userId = ? 
       ORDER BY createdAt DESC
@@ -28,7 +28,7 @@ router.get('/', (req, res) => {
 });
 
 // Criar meta
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { title, description, targetAmount, deadline, category } = req.body;
 
@@ -56,17 +56,17 @@ router.post('/', (req, res) => {
 });
 
 // Atualizar meta
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, targetAmount, currentAmount, deadline, category, isCompleted, completedAt } = req.body;
 
-    const existing = db.prepare('SELECT id FROM financial_goals WHERE id = ? AND userId = ?').get(id, req.user.id);
+    const existing = await db.prepare('SELECT id FROM financial_goals WHERE id = ? AND userId = ?').get(id, req.user.id);
     if (!existing) {
       return res.status(404).json({ error: 'Meta não encontrada' });
     }
 
-    db.prepare(`
+    await db.prepare(`
       UPDATE financial_goals 
       SET title = ?, description = ?, targetAmount = ?, currentAmount = ?, deadline = ?, category = ?, isCompleted = ?, completedAt = ?
       WHERE id = ? AND userId = ?
@@ -75,7 +75,7 @@ router.put('/:id', (req, res) => {
       isCompleted ? 1 : 0, completedAt || null, id, req.user.id
     );
 
-    const goal = db.prepare('SELECT * FROM financial_goals WHERE id = ?').get(id);
+    const goal = await db.prepare('SELECT * FROM financial_goals WHERE id = ?').get(id);
     res.json({
       ...goal,
       isCompleted: Boolean(goal.isCompleted),
@@ -87,11 +87,11 @@ router.put('/:id', (req, res) => {
 });
 
 // Deletar meta
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const result = db.prepare('DELETE FROM financial_goals WHERE id = ? AND userId = ?').run(id, req.user.id);
+    const result = await db.prepare('DELETE FROM financial_goals WHERE id = ? AND userId = ?').run(id, req.user.id);
     
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Meta não encontrada' });

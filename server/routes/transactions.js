@@ -8,9 +8,9 @@ const router = express.Router();
 router.use(authenticateToken);
 
 // Listar transações do usuário
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const transactions = db.prepare(`
+    const transactions = await db.prepare(`
       SELECT * FROM transactions 
       WHERE userId = ? 
       ORDER BY date DESC, createdAt DESC
@@ -45,7 +45,7 @@ router.get('/', (req, res) => {
 });
 
 // Criar transação
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { type, category, amount, description, date, tags, customCategoryId } = req.body;
 
@@ -57,7 +57,7 @@ router.post('/', (req, res) => {
     const createdAt = new Date().toISOString();
     const tagsJson = tags && Array.isArray(tags) ? JSON.stringify(tags) : null;
 
-    db.prepare(`
+    await db.prepare(`
       INSERT INTO transactions (id, userId, type, category, amount, description, date, tags, customCategoryId, createdAt)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(id, req.user.id, type, category, amount, description || null, date, tagsJson, customCategoryId || null, createdAt);
@@ -83,26 +83,26 @@ router.post('/', (req, res) => {
 });
 
 // Atualizar transação
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { type, category, amount, description, date, tags, customCategoryId } = req.body;
 
     // Verificar se a transação pertence ao usuário
-    const existing = db.prepare('SELECT id FROM transactions WHERE id = ? AND userId = ?').get(id, req.user.id);
+    const existing = await db.prepare('SELECT id FROM transactions WHERE id = ? AND userId = ?').get(id, req.user.id);
     if (!existing) {
       return res.status(404).json({ error: 'Transação não encontrada' });
     }
 
     const tagsJson = tags && Array.isArray(tags) ? JSON.stringify(tags) : null;
 
-    db.prepare(`
+    await db.prepare(`
       UPDATE transactions 
       SET type = ?, category = ?, amount = ?, description = ?, date = ?, tags = ?, customCategoryId = ?
       WHERE id = ? AND userId = ?
     `).run(type, category, amount, description || null, date, tagsJson, customCategoryId || null, id, req.user.id);
 
-    const transaction = db.prepare('SELECT * FROM transactions WHERE id = ?').get(id);
+    const transaction = await db.prepare('SELECT * FROM transactions WHERE id = ?').get(id);
     
     // Converter tags com tratamento de erro
     let parsedTags = [];
@@ -129,11 +129,11 @@ router.put('/:id', (req, res) => {
 });
 
 // Deletar transação
-router.delete('/:id', (req, res) => {
+router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const result = db.prepare('DELETE FROM transactions WHERE id = ? AND userId = ?').run(id, req.user.id);
+    const result = await db.prepare('DELETE FROM transactions WHERE id = ? AND userId = ?').run(id, req.user.id);
     
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Transação não encontrada' });

@@ -3,4 +3,6 @@ node_modules/
 *.db
 *.db-journal
 .DS_Store
+firebase-service-account.json
+data.json
 

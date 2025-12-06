@@ -1,21 +1,33 @@
-// Tentar usar better-sqlite3, se não disponível, usar versão JSON
+// Prioridade: Firestore > SQLite > JSON
 let db;
 let usingSQLite = false;
+let usingFirestore = false;
 
+// Tentar usar Firestore primeiro
 try {
-  const Database = (await import('better-sqlite3')).default;
-  const path = (await import('path')).default;
-  const { fileURLToPath } = await import('url');
-  
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = path.dirname(__filename);
-  
-  db = new Database(path.join(__dirname, 'finance.db'));
-  usingSQLite = true;
+  db = (await import('./database-firestore.js')).default;
+  usingFirestore = true;
+  console.log('✅ Usando Firestore Database');
 } catch (error) {
-  console.warn('⚠️  better-sqlite3 não disponível, usando armazenamento JSON');
-  db = (await import('./database-simple.js')).default;
-  usingSQLite = false;
+  console.warn('⚠️  Firestore não disponível, tentando SQLite...');
+  
+  // Tentar usar better-sqlite3
+  try {
+    const Database = (await import('better-sqlite3')).default;
+    const path = (await import('path')).default;
+    const { fileURLToPath } = await import('url');
+    
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    
+    db = new Database(path.join(__dirname, 'finance.db'));
+    usingSQLite = true;
+    console.log('✅ Usando SQLite Database');
+  } catch (error2) {
+    console.warn('⚠️  SQLite não disponível, usando armazenamento JSON');
+    db = (await import('./database-simple.js')).default;
+    console.log('✅ Usando JSON Database (modo desenvolvimento)');
+  }
 }
 
 // Habilitar foreign keys apenas se usando SQLite e suportar pragma
@@ -27,8 +39,8 @@ if (usingSQLite && typeof db.pragma === 'function') {
   }
 }
 
-// Criar tabelas apenas se usando SQLite
-if (usingSQLite) {
+// Criar tabelas apenas se usando SQLite (Firestore não precisa de schema)
+if (usingSQLite && !usingFirestore) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
