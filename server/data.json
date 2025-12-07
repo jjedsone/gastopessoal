@@ -8,6 +8,15 @@
       "type": "single",
       "partnerId": null,
       "createdAt": "2025-12-07T01:36:49.888Z"
+    },
+    {
+      "id": "user_1765072290398_5d3fbk6mv",
+      "name": "jedson",
+      "username": "jjedsone",
+      "password": "$2a$10$/yEKBS1ItR3hTKJBhRDGpOj4qcJwHGyEyOmSBElwH2yBgtRSZhgbC",
+      "type": "single",
+      "partnerId": null,
+      "createdAt": "2025-12-07T01:51:30.398Z"
     }
   ],
   "transactions": [],
