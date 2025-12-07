@@ -45,7 +45,7 @@ if (usingSQLite && !usingFirestore) {
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
-      email TEXT UNIQUE NOT NULL,
+      username TEXT UNIQUE NOT NULL,
       password TEXT NOT NULL,
       type TEXT NOT NULL CHECK(type IN ('single', 'couple')),
       partnerId TEXT,

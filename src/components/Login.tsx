@@ -12,11 +12,10 @@ const Login: React.FC = () => {
   const { showNotification } = useNotification();
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [userType, setUserType] = useState<UserType>('single');
   const [partnerName, setPartnerName] = useState('');
-  const [partnerEmail, setPartnerEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -24,7 +23,7 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await authAPI.login(email, password);
+      const response = await authAPI.login(username, password);
       
       if (response && response.token && response.user) {
         localStorage.setItem('authToken', response.token);
@@ -48,15 +47,15 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      if (!name || !email || !password) {
-        showNotification('Preencha todos os campos obrigatórios', 'error');
+      if (!name || !password) {
+        showNotification('Preencha nome e senha', 'error');
         setLoading(false);
         return;
       }
 
       const response = await authAPI.register({
         name,
-        email,
+        username: username || undefined,
         password,
         type: userType,
         partnerId: userType === 'couple' && partnerName ? undefined : undefined,
@@ -105,14 +104,14 @@ const Login: React.FC = () => {
         {isLogin ? (
           <form onSubmit={handleLogin} className="login-form">
             <div className="form-group">
-              <label htmlFor="login-email">Email</label>
+              <label htmlFor="login-username">Nome de Usuário</label>
               <input
-                id="login-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="login-username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
-                placeholder="seu@email.com"
+                placeholder="seu_usuario"
               />
             </div>
 
@@ -171,15 +170,15 @@ const Login: React.FC = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="email">Seu Email</label>
+              <label htmlFor="username">Nome de Usuário (opcional)</label>
               <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="seu@email.com"
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="será gerado automaticamente se não informado"
               />
+              <small>Se não informado, será gerado automaticamente baseado no seu nome</small>
             </div>
 
             <div className="form-group">
@@ -196,29 +195,16 @@ const Login: React.FC = () => {
             </div>
 
             {userType === 'couple' && (
-              <>
-                <div className="form-group">
-                  <label htmlFor="partnerName">Nome do Parceiro(a) (opcional)</label>
-                  <input
-                    id="partnerName"
-                    type="text"
-                    value={partnerName}
-                    onChange={(e) => setPartnerName(e.target.value)}
-                    placeholder="Nome do parceiro(a)"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="partnerEmail">Email do Parceiro(a) (opcional)</label>
-                  <input
-                    id="partnerEmail"
-                    type="email"
-                    value={partnerEmail}
-                    onChange={(e) => setPartnerEmail(e.target.value)}
-                    placeholder="parceiro@email.com"
-                  />
-                </div>
-              </>
+              <div className="form-group">
+                <label htmlFor="partnerName">Nome do Parceiro(a) (opcional)</label>
+                <input
+                  id="partnerName"
+                  type="text"
+                  value={partnerName}
+                  onChange={(e) => setPartnerName(e.target.value)}
+                  placeholder="Nome do parceiro(a)"
+                />
+              </div>
             )}
 
             <button type="submit" className="submit-btn" disabled={loading}>

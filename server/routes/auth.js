@@ -8,21 +8,29 @@ const router = express.Router();
 // Registrar novo usuário
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, type, partnerId } = req.body;
+    const { name, username, password, type, partnerId } = req.body;
 
     // Validações
-    if (!name || !email || !password || !type) {
-      return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+    if (!name || !password || !type) {
+      return res.status(400).json({ error: 'Nome, senha e tipo são obrigatórios' });
     }
 
     if (!['single', 'couple'].includes(type)) {
       return res.status(400).json({ error: 'Tipo de usuário inválido' });
     }
 
-    // Verificar se email já existe
-    const existingUser = await db.prepare('SELECT id FROM users WHERE email = ?').get(email);
+    // Gerar username se não fornecido (baseado no nome)
+    const finalUsername = username || name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+
+    // Validar username
+    if (finalUsername.length < 3) {
+      return res.status(400).json({ error: 'Nome de usuário deve ter pelo menos 3 caracteres' });
+    }
+
+    // Verificar se username já existe
+    const existingUser = await db.prepare('SELECT id FROM users WHERE username = ?').get(finalUsername);
     if (existingUser) {
-      return res.status(400).json({ error: 'Email já está em uso' });
+      return res.status(400).json({ error: 'Nome de usuário já está em uso' });
     }
 
     // Hash da senha
@@ -33,14 +41,14 @@ router.post('/register', async (req, res) => {
     const createdAt = new Date().toISOString();
 
     await db.prepare(`
-      INSERT INTO users (id, name, email, password, type, partnerId, createdAt)
+      INSERT INTO users (id, name, username, password, type, partnerId, createdAt)
       VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(userId, name, email, hashedPassword, type, partnerId || null, createdAt);
+    `).run(userId, name, finalUsername, hashedPassword, type, partnerId || null, createdAt);
 
     const user = {
       id: userId,
       name,
-      email,
+      username: finalUsername,
       type,
       partnerId: partnerId || null,
     };
@@ -61,28 +69,33 @@ router.post('/register', async (req, res) => {
 // Login
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { username, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email e senha são obrigatórios' });
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Nome de usuário e senha são obrigatórios' });
     }
 
-    // Buscar usuário
-    const user = await db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+    // Buscar usuário por username primeiro, depois por email (compatibilidade)
+    let user = await db.prepare('SELECT * FROM users WHERE username = ?').get(username);
     if (!user) {
-      return res.status(401).json({ error: 'Email ou senha incorretos' });
+      // Compatibilidade: tentar buscar por email também
+      user = await db.prepare('SELECT * FROM users WHERE email = ?').get(username);
+    }
+    
+    if (!user) {
+      return res.status(401).json({ error: 'Nome de usuário ou senha incorretos' });
     }
 
     // Verificar senha
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-      return res.status(401).json({ error: 'Email ou senha incorretos' });
+      return res.status(401).json({ error: 'Nome de usuário ou senha incorretos' });
     }
 
     const userData = {
       id: user.id,
       name: user.name,
-      email: user.email,
+      username: user.username || user.email || username,
       type: user.type,
       partnerId: user.partnerId,
     };

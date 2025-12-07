@@ -3,7 +3,7 @@ export type UserType = 'single' | 'couple';
 export interface User {
   id: string;
   name: string;
-  email: string;
+  username: string;
   type: UserType;
   partnerId?: string;
 }

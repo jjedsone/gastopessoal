@@ -17,30 +17,21 @@ try {
     // Tentar usar credenciais do arquivo de serviço
     const serviceAccountPath = path.join(__dirname, 'firebase-service-account.json');
     
-    if (fs.existsSync(serviceAccountPath)) {
-      const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-      });
-      initialized = true;
-    } else {
-      // Usar variáveis de ambiente ou inicialização padrão
-      if (process.env.FIREBASE_PROJECT_ID) {
+      if (fs.existsSync(serviceAccountPath)) {
+        const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
         admin.initializeApp({
-          projectId: process.env.FIREBASE_PROJECT_ID,
+          credential: admin.credential.cert(serviceAccount),
+          projectId: serviceAccount.project_id || 'gastopessoal-ac9aa',
         });
         initialized = true;
       } else {
-        // Tentar usar Application Default Credentials (para produção no GCP)
-        try {
-          admin.initializeApp();
-          initialized = true;
-        } catch (initError) {
-          console.warn('⚠️  Não foi possível inicializar Firestore. Usando fallback.');
-          throw initError;
-        }
+        // Usar variáveis de ambiente ou inicialização padrão
+        const projectId = process.env.FIREBASE_PROJECT_ID || 'gastopessoal-ac9aa';
+        admin.initializeApp({
+          projectId: projectId,
+        });
+        initialized = true;
       }
-    }
   } else {
     initialized = true;
   }
@@ -60,10 +51,23 @@ const firestoreDB = {
     return {
       get: async (...params) => {
         try {
+          if (query.includes('SELECT') && query.includes('WHERE username = ?')) {
+            const username = params[0];
+            const snapshot = await db.collection('users')
+              .where('username', '==', username)
+              .limit(1)
+              .get();
+            
+            if (snapshot.empty) return null;
+            const doc = snapshot.docs[0];
+            return { id: doc.id, ...doc.data() };
+          }
+          
+          // Compatibilidade com email (deprecated)
           if (query.includes('SELECT') && query.includes('WHERE email = ?')) {
             const email = params[0];
             const snapshot = await db.collection('users')
-              .where('email', '==', email)
+              .where('username', '==', email)
               .limit(1)
               .get();
             
@@ -134,10 +138,11 @@ const firestoreDB = {
       run: async (...params) => {
         try {
           if (query.includes('INSERT INTO users')) {
-            const [id, name, email, password, type, partnerId, createdAt] = params;
+            // Suporta tanto username quanto email (para compatibilidade)
+            const [id, name, username, password, type, partnerId, createdAt] = params;
             await db.collection('users').doc(id).set({
               name,
-              email,
+              username: username || name.toLowerCase().replace(/\s+/g, '_'),
               password,
               type,
               partnerId: partnerId || null,

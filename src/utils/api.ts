@@ -130,7 +130,7 @@ const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
 
 // Auth API
 export const authAPI = {
-  register: async (data: { name: string; email: string; password: string; type: 'single' | 'couple'; partnerId?: string }) => {
+  register: async (data: { name: string; username?: string; password: string; type: 'single' | 'couple'; partnerId?: string }) => {
     try {
       const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
@@ -162,12 +162,12 @@ export const authAPI = {
     }
   },
 
-  login: async (email: string, password: string) => {
+  login: async (username: string, password: string) => {
     try {
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, password }),
       });
 
       if (!response.ok) {

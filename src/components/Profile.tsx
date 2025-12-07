@@ -1,6 +1,6 @@
 import React from 'react';
 import { useFinance } from '../context/FinanceContext';
-import { User, Mail, Users, UserCircle } from 'lucide-react';
+import { User, Users, UserCircle } from 'lucide-react';
 import './Profile.css';
 
 const Profile: React.FC = () => {
@@ -18,9 +18,9 @@ const Profile: React.FC = () => {
         </div>
         <div className="profile-info">
           <h2>{user.name}</h2>
-          <p className="profile-email">
-            <Mail size={16} />
-            {user.email}
+          <p className="profile-username">
+            <User size={16} />
+            @{user.username}
           </p>
           <span className={`profile-type ${user.type}`}>
             {user.type === 'couple' ? (
@@ -47,8 +47,8 @@ const Profile: React.FC = () => {
               <span className="info-value">{user.name}</span>
             </div>
             <div className="info-item">
-              <span className="info-label">Email</span>
-              <span className="info-value">{user.email}</span>
+              <span className="info-label">Nome de Usuário</span>
+              <span className="info-value">@{user.username}</span>
             </div>
             <div className="info-item">
               <span className="info-label">Tipo de Conta</span>
