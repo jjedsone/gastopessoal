@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFinance } from '../context/FinanceContext';
 import { useNotification } from '../context/NotificationContext';
-import { authAPI } from '../utils/api';
+import { authService } from '../services/authService';
 import { UserType } from '../types';
 import './Login.css';
 
@@ -23,7 +23,7 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await authAPI.login(username, password);
+      const response = await authService.login(username, password);
       
       if (response && response.token && response.user) {
         localStorage.setItem('authToken', response.token);
@@ -32,11 +32,11 @@ const Login: React.FC = () => {
         showNotification('Login realizado com sucesso!', 'success');
         navigate('/');
       } else {
-        throw new Error('Resposta inválida do servidor');
+        throw new Error('Resposta inválida');
       }
     } catch (error: any) {
       console.error('Erro no login:', error);
-      showNotification(error.message || 'Erro ao fazer login. Verifique se o servidor está rodando.', 'error');
+      showNotification(error.message || 'Erro ao fazer login. Verifique suas credenciais.', 'error');
     } finally {
       setLoading(false);
     }
@@ -53,7 +53,7 @@ const Login: React.FC = () => {
         return;
       }
 
-      const response = await authAPI.register({
+      const response = await authService.register({
         name,
         username: username || undefined,
         password,
@@ -68,11 +68,11 @@ const Login: React.FC = () => {
         showNotification('Conta criada com sucesso!', 'success');
         navigate('/');
       } else {
-        throw new Error('Resposta inválida do servidor');
+        throw new Error('Resposta inválida');
       }
     } catch (error: any) {
       console.error('Erro no registro:', error);
-      showNotification(error.message || 'Erro ao criar conta. Verifique se o servidor está rodando.', 'error');
+      showNotification(error.message || 'Erro ao criar conta. Verifique os dados informados.', 'error');
     } finally {
       setLoading(false);
     }

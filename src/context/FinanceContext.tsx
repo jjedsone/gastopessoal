@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Transaction, Budget, FinancialSummary, AIRecommendation, InvestmentSuggestion } from '../types';
-import { transactionsAPI, budgetsAPI, authAPI } from '../utils/api';
+import { transactionsService, budgetsService } from '../services/firestoreService';
+import { authService } from '../services/authService';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../config/firebase';
 
 interface FinanceContextType {
   user: User | null;
@@ -25,62 +28,52 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [budgets, setBudgets] = useState<Budget[]>([]);
 
-  // Carregar dados do backend quando usuário estiver autenticado
+  // Carregar dados do Firestore quando usuário estiver autenticado
   useEffect(() => {
-    const loadUserData = async () => {
-      try {
-        const savedUser = localStorage.getItem('user');
-        const token = localStorage.getItem('authToken');
-
-        if (savedUser && token) {
-          try {
-            const parsedUser = JSON.parse(savedUser);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          // Buscar dados do usuário no Firestore
+          const userData = await authService.getCurrentUser();
+          if (userData) {
+            setUser(userData);
             
-            // Verificar se o token ainda é válido
-            const verifyResult = await authAPI.verify();
-            if (verifyResult && verifyResult.valid && parsedUser && parsedUser.id && parsedUser.name) {
-              setUser(parsedUser);
+            // Carregar transações e orçamentos do Firestore
+            try {
+              const [transactionsData, budgetsData] = await Promise.all([
+                transactionsService.getAll(userData.id),
+                budgetsService.getAll(userData.id),
+              ]);
               
-              // Carregar transações e orçamentos do backend
-              try {
-                const [transactionsData, budgetsData] = await Promise.all([
-                  transactionsAPI.getAll(),
-                  budgetsAPI.getAll(),
-                ]);
-                
-                if (Array.isArray(transactionsData)) {
-                  setTransactions(transactionsData);
-                }
-                if (Array.isArray(budgetsData)) {
-                  setBudgets(budgetsData);
-                }
-              } catch (error) {
-                console.error('Erro ao carregar dados do backend:', error);
-                // Continuar mesmo se não conseguir carregar dados
+              if (Array.isArray(transactionsData)) {
+                setTransactions(transactionsData);
               }
-            } else {
-              // Token inválido, limpar dados
-              localStorage.removeItem('user');
-              localStorage.removeItem('authToken');
-              setUser(null);
+              if (Array.isArray(budgetsData)) {
+                setBudgets(budgetsData);
+              }
+            } catch (error) {
+              console.error('Erro ao carregar dados do Firestore:', error);
+              // Continuar mesmo se não conseguir carregar dados
             }
-          } catch (parseError) {
-            console.error('Erro ao fazer parse do usuário:', parseError);
-            localStorage.removeItem('user');
-            localStorage.removeItem('authToken');
+          } else {
             setUser(null);
           }
+        } catch (error) {
+          console.error('Erro ao verificar autenticação:', error);
+          setUser(null);
         }
-      } catch (error) {
-        console.error('Erro ao verificar autenticação:', error);
-        // Não limpar dados em caso de erro de rede, apenas logar
+      } else {
+        // Usuário não autenticado
+        setUser(null);
+        setTransactions([]);
+        setBudgets([]);
       }
-    };
+    });
 
-    loadUserData();
+    return () => unsubscribe();
   }, []);
 
-  // Salvar usuário no localStorage quando mudar
+  // Salvar usuário no localStorage quando mudar (para compatibilidade)
   useEffect(() => {
     try {
       if (user) {
@@ -95,8 +88,13 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
   }, [user]);
 
   const addTransaction = async (transaction: Omit<Transaction, 'id' | 'createdAt'>) => {
+    if (!user) throw new Error('Usuário não autenticado');
+    
     try {
-      const newTransaction = await transactionsAPI.create(transaction);
+      const newTransaction = await transactionsService.create({
+        ...transaction,
+        userId: user.id,
+      });
       setTransactions([...transactions, newTransaction]);
     } catch (error) {
       console.error('Erro ao criar transação:', error);
@@ -106,7 +104,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const updateTransaction = async (id: string, updates: Partial<Transaction>) => {
     try {
-      const updatedTransaction = await transactionsAPI.update(id, updates);
+      const updatedTransaction = await transactionsService.update(id, updates);
       setTransactions(transactions.map(t => t.id === id ? updatedTransaction : t));
     } catch (error) {
       console.error('Erro ao atualizar transação:', error);
@@ -116,7 +114,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const deleteTransaction = async (id: string) => {
     try {
-      await transactionsAPI.delete(id);
+      await transactionsService.delete(id);
       setTransactions(transactions.filter(t => t.id !== id));
     } catch (error) {
       console.error('Erro ao deletar transação:', error);
@@ -125,8 +123,13 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const addBudget = async (budget: Omit<Budget, 'id'>) => {
+    if (!user) throw new Error('Usuário não autenticado');
+    
     try {
-      const newBudget = await budgetsAPI.create(budget);
+      const newBudget = await budgetsService.create({
+        ...budget,
+        userId: user.id,
+      });
       setBudgets([...budgets, newBudget]);
     } catch (error) {
       console.error('Erro ao criar orçamento:', error);
@@ -136,7 +139,7 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   const updateBudget = async (id: string, updates: Partial<Budget>) => {
     try {
-      const updatedBudget = await budgetsAPI.update(id, updates);
+      const updatedBudget = await budgetsService.update(id, updates);
       setBudgets(budgets.map(b => b.id === id ? updatedBudget : b));
     } catch (error) {
       console.error('Erro ao atualizar orçamento:', error);
