@@ -56,8 +56,12 @@ const db = {
     return {
       get: (...params) => {
         // Implementação simples para SELECT
+        if (query.includes('SELECT') && query.includes('WHERE username = ?')) {
+          return data.users.find(u => u.username === params[0]);
+        }
+        // Compatibilidade com email (deprecated)
         if (query.includes('SELECT') && query.includes('WHERE email = ?')) {
-          return data.users.find(u => u.email === params[0]);
+          return data.users.find(u => u.username === params[0] || u.email === params[0]);
         }
         if (query.includes('SELECT') && query.includes('WHERE id = ?')) {
           const table = query.match(/FROM (\w+)/)?.[1];
@@ -85,8 +89,8 @@ const db = {
       run: (...params) => {
         // Implementação simples para INSERT/UPDATE/DELETE
         if (query.includes('INSERT INTO users')) {
-          const [id, name, email, password, type, partnerId, createdAt] = params;
-          data.users.push({ id, name, email, password, type, partnerId, createdAt });
+          const [id, name, username, password, type, partnerId, createdAt] = params;
+          data.users.push({ id, name, username, password, type, partnerId, createdAt });
           saveData(data);
           return { changes: 1 };
         }

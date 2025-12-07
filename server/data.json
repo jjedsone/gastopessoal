@@ -1,1 +1,18 @@
-{"users":[],"transactions":[],"budgets":[],"financial_goals":[],"custom_categories":[],"scheduled_expenses":[]}
+{
+  "users": [
+    {
+      "id": "user_1765071409888_i4bcqsson",
+      "name": "Usuário Teste",
+      "username": "teste",
+      "password": "$2a$10$6bBu/S923MwqeVFPZvPhcOpPL/PDtMWiDKDOJTxsdsdXX.Y1CvnUO",
+      "type": "single",
+      "partnerId": null,
+      "createdAt": "2025-12-07T01:36:49.888Z"
+    }
+  ],
+  "transactions": [],
+  "budgets": [],
+  "financial_goals": [],
+  "custom_categories": [],
+  "scheduled_expenses": []
+}
