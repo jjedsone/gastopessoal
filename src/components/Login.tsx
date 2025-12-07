@@ -12,6 +12,7 @@ const Login: React.FC = () => {
   const { showNotification } = useNotification();
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [userType, setUserType] = useState<UserType>('single');
@@ -23,7 +24,13 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      const response = await authService.login(username, password);
+      if (!email || !password) {
+        showNotification('Preencha email e senha', 'error');
+        setLoading(false);
+        return;
+      }
+
+      const response = await authService.login(email, password);
       
       if (response && response.token && response.user) {
         localStorage.setItem('authToken', response.token);
@@ -53,26 +60,33 @@ const Login: React.FC = () => {
         return;
       }
 
+      if (!email) {
+        showNotification('Preencha o email', 'error');
+        setLoading(false);
+        return;
+      }
+
       // Preparar dados de registro
       const registerData: {
         name: string;
+        email: string;
         username?: string;
         password: string;
         type: 'single' | 'couple';
         partnerId?: string;
       } = {
         name,
+        email,
         password,
         type: userType,
       };
 
       // Adicionar username apenas se fornecido
-      if (username) {
+      if (username && username.trim() !== '') {
         registerData.username = username;
       }
 
-      // TODO: Implementar lógica de partnerId quando necessário
-      // Por enquanto, não enviamos partnerId para evitar valores undefined
+      // Não enviar partnerId se não tiver valor válido (evita undefined no Firestore)
 
       const response = await authService.register(registerData);
 
@@ -119,14 +133,14 @@ const Login: React.FC = () => {
         {isLogin ? (
           <form onSubmit={handleLogin} className="login-form">
             <div className="form-group">
-              <label htmlFor="login-username">Nome de Usuário</label>
+              <label htmlFor="login-email">Email</label>
               <input
-                id="login-username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                id="login-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
-                placeholder="seu_usuario"
+                placeholder="seu@email.com"
               />
             </div>
 
@@ -185,6 +199,18 @@ const Login: React.FC = () => {
             </div>
 
             <div className="form-group">
+              <label htmlFor="email">Email</label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="seu@email.com"
+              />
+            </div>
+
+            <div className="form-group">
               <label htmlFor="username">Nome de Usuário (opcional)</label>
               <input
                 id="username"
@@ -193,7 +219,7 @@ const Login: React.FC = () => {
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="será gerado automaticamente se não informado"
               />
-              <small>Se não informado, será gerado automaticamente baseado no seu nome</small>
+              <small>Se não informado, será gerado automaticamente baseado no email</small>
             </div>
 
             <div className="form-group">

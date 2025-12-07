@@ -3,11 +3,6 @@ import { User } from '../types';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { auth } from '../config/firebase';
 
-// Helper para gerar email único baseado em username
-const usernameToEmail = (username: string): string => {
-  return `${username}@gastopessoal.local`;
-};
-
 // Helper para gerar username único baseado em nome
 const generateUsername = (name: string): string => {
   const base = name.toLowerCase()
@@ -24,29 +19,33 @@ export const authService = {
   // Registrar novo usuário
   register: async (data: {
     name: string;
+    email: string;
     username?: string;
     password: string;
     type: 'single' | 'couple';
     partnerId?: string;
   }): Promise<{ user: User; token: string }> => {
     try {
-      // Gerar username se não fornecido
-      const username = data.username || generateUsername(data.name);
+      // Gerar username se não fornecido (baseado no email)
+      const username = data.username || data.email.split('@')[0] || generateUsername(data.name);
 
-      // Criar usuário no Firebase Auth usando email baseado em username
-      // O Firebase Auth já previne emails duplicados, então não precisamos verificar username antes
-      const email = usernameToEmail(username);
-      const userCredential = await createUserWithEmailAndPassword(auth, email, data.password);
+      // Criar usuário no Firebase Auth usando email diretamente
+      // O Firebase Auth já previne emails duplicados
+      const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       const firebaseUser = userCredential.user;
 
       // Criar documento do usuário no Firestore
-      // Só incluir partnerId se tiver valor válido
-      const userData: Omit<User, 'id'> = {
+      // Remover campos undefined para evitar erros no Firestore
+      const userData: any = {
         name: data.name,
         username: username,
         type: data.type,
-        ...(data.partnerId && { partnerId: data.partnerId }),
       };
+      
+      // Só adicionar partnerId se tiver valor válido (não undefined, null ou vazio)
+      if (data.partnerId && data.partnerId.trim() !== '') {
+        userData.partnerId = data.partnerId;
+      }
 
       const user = await usersService.create(firebaseUser.uid, userData);
 
@@ -80,13 +79,10 @@ export const authService = {
     }
   },
 
-  // Login com username e password
-  login: async (username: string, password: string): Promise<{ user: User; token: string }> => {
+  // Login com email e password
+  login: async (email: string, password: string): Promise<{ user: User; token: string }> => {
     try {
-      // Converter username para email
-      const email = usernameToEmail(username);
-
-      // Fazer login no Firebase Auth
+      // Fazer login no Firebase Auth usando email diretamente
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
 
@@ -104,7 +100,11 @@ export const authService = {
       console.error('Erro no login:', error);
       
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        throw new Error('Nome de usuário ou senha incorretos');
+        throw new Error('Email ou senha incorretos');
+      }
+      
+      if (error.code === 'auth/invalid-email') {
+        throw new Error('Email inválido');
       }
       
       if (error.code === 'auth/configuration-not-found') {
