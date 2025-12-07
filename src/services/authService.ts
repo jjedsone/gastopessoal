@@ -58,7 +58,7 @@ export const authService = {
       
       // Tratamento específico de erros do Firebase Auth
       if (error.code === 'auth/email-already-in-use') {
-        throw new Error('Nome de usuário já está em uso');
+        throw new Error('Este email já está em uso');
       }
       
       if (error.code === 'auth/configuration-not-found') {
