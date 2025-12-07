@@ -55,13 +55,27 @@ export const authService = {
       return { user, token };
     } catch (error: any) {
       console.error('Erro no registro:', error);
+      
+      // Tratamento específico de erros do Firebase Auth
       if (error.code === 'auth/email-already-in-use') {
         throw new Error('Nome de usuário já está em uso');
       }
+      
+      if (error.code === 'auth/configuration-not-found') {
+        throw new Error('Firebase Authentication não está ativado. Acesse o Firebase Console e ative o Authentication: https://console.firebase.google.com/project/gastopessoal-ac9aa/authentication');
+      }
+      
+      if (error.code === 'auth/operation-not-allowed') {
+        throw new Error('Método de autenticação não está habilitado. Ative Email/Password no Firebase Console.');
+      }
+      
       if (error.code === 'permission-denied' || error.message?.includes('permission')) {
         throw new Error('Erro de permissão. Verifique se o Firestore está configurado corretamente.');
       }
-      throw new Error(error.message || 'Erro ao criar conta');
+      
+      // Erro genérico com mensagem mais clara
+      const errorMessage = error.message || 'Erro ao criar conta';
+      throw new Error(errorMessage);
     }
   },
 
@@ -87,9 +101,19 @@ export const authService = {
       return { user, token };
     } catch (error: any) {
       console.error('Erro no login:', error);
+      
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
         throw new Error('Nome de usuário ou senha incorretos');
       }
+      
+      if (error.code === 'auth/configuration-not-found') {
+        throw new Error('Firebase Authentication não está ativado. Acesse o Firebase Console e ative o Authentication: https://console.firebase.google.com/project/gastopessoal-ac9aa/authentication');
+      }
+      
+      if (error.code === 'auth/operation-not-allowed') {
+        throw new Error('Método de autenticação não está habilitado. Ative Email/Password no Firebase Console.');
+      }
+      
       throw new Error(error.message || 'Erro ao fazer login');
     }
   },
