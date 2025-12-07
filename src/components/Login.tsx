@@ -53,13 +53,28 @@ const Login: React.FC = () => {
         return;
       }
 
-      const response = await authService.register({
+      // Preparar dados de registro
+      const registerData: {
+        name: string;
+        username?: string;
+        password: string;
+        type: 'single' | 'couple';
+        partnerId?: string;
+      } = {
         name,
-        username: username || undefined,
         password,
         type: userType,
-        partnerId: userType === 'couple' && partnerName ? undefined : undefined,
-      });
+      };
+
+      // Adicionar username apenas se fornecido
+      if (username) {
+        registerData.username = username;
+      }
+
+      // TODO: Implementar lógica de partnerId quando necessário
+      // Por enquanto, não enviamos partnerId para evitar valores undefined
+
+      const response = await authService.register(registerData);
 
       if (response && response.token && response.user) {
         localStorage.setItem('authToken', response.token);

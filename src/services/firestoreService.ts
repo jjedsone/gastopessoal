@@ -32,15 +32,28 @@ const stringToTimestamp = (dateString: string): Timestamp => {
   return Timestamp.fromDate(new Date(dateString));
 };
 
+// Helper para remover campos undefined antes de salvar no Firestore
+const removeUndefinedFields = (obj: any): any => {
+  const cleaned: any = {};
+  for (const key in obj) {
+    if (obj[key] !== undefined) {
+      cleaned[key] = obj[key];
+    }
+  }
+  return cleaned;
+};
+
 // ============ USUÁRIOS ============
 export const usersService = {
   // Criar usuário
   create: async (userId: string, userData: Omit<User, 'id'>): Promise<User> => {
     const userRef = doc(db, 'users', userId);
-    await setDoc(userRef, {
+    // Remover campos undefined antes de salvar
+    const cleanedData = removeUndefinedFields({
       ...userData,
       createdAt: serverTimestamp(),
     });
+    await setDoc(userRef, cleanedData);
     return { id: userId, ...userData };
   },
 
@@ -72,7 +85,7 @@ export const usersService = {
   // Atualizar usuário
   update: async (userId: string, updates: Partial<User>): Promise<void> => {
     const userRef = doc(db, 'users', userId);
-    await updateDoc(userRef, updates);
+    await updateDoc(userRef, removeUndefinedFields(updates));
   },
 };
 
@@ -97,11 +110,11 @@ export const transactionsService = {
 
   // Criar transação
   create: async (transaction: Omit<Transaction, 'id' | 'createdAt'>): Promise<Transaction> => {
-    const docRef = await addDoc(collection(db, 'transactions'), {
+    const docRef = await addDoc(collection(db, 'transactions'), removeUndefinedFields({
       ...transaction,
       date: stringToTimestamp(transaction.date),
       createdAt: serverTimestamp(),
-    });
+    }));
     
     const docSnap = await getDoc(docRef);
     return {
@@ -121,7 +134,7 @@ export const transactionsService = {
       updateData.date = stringToTimestamp(updates.date);
     }
     
-    await updateDoc(transactionRef, updateData);
+    await updateDoc(transactionRef, removeUndefinedFields(updateData));
     
     const docSnap = await getDoc(transactionRef);
     return {
@@ -156,7 +169,7 @@ export const budgetsService = {
 
   // Criar orçamento
   create: async (budget: Omit<Budget, 'id'>): Promise<Budget> => {
-    const docRef = await addDoc(collection(db, 'budgets'), budget);
+    const docRef = await addDoc(collection(db, 'budgets'), removeUndefinedFields(budget));
     
     const docSnap = await getDoc(docRef);
     return {
@@ -168,7 +181,7 @@ export const budgetsService = {
   // Atualizar orçamento
   update: async (id: string, updates: Partial<Budget>): Promise<Budget> => {
     const budgetRef = doc(db, 'budgets', id);
-    await updateDoc(budgetRef, updates);
+    await updateDoc(budgetRef, removeUndefinedFields(updates));
     
     const docSnap = await getDoc(budgetRef);
     return {
@@ -205,11 +218,11 @@ export const goalsService = {
 
   // Criar meta
   create: async (goal: Omit<FinancialGoal, 'id' | 'createdAt'>): Promise<FinancialGoal> => {
-    const docRef = await addDoc(collection(db, 'financial_goals'), {
+    const docRef = await addDoc(collection(db, 'financial_goals'), removeUndefinedFields({
       ...goal,
       deadline: stringToTimestamp(goal.deadline),
       createdAt: serverTimestamp(),
-    });
+    }));
     
     const docSnap = await getDoc(docRef);
     const data = docSnap.data();
@@ -234,7 +247,7 @@ export const goalsService = {
       updateData.completedAt = stringToTimestamp(updates.completedAt);
     }
     
-    await updateDoc(goalRef, updateData);
+    await updateDoc(goalRef, removeUndefinedFields(updateData));
     
     const docSnap = await getDoc(goalRef);
     const data = docSnap.data();
@@ -272,10 +285,10 @@ export const categoriesService = {
 
   // Criar categoria
   create: async (category: Omit<CustomCategory, 'id' | 'createdAt'>): Promise<CustomCategory> => {
-    const docRef = await addDoc(collection(db, 'custom_categories'), {
+    const docRef = await addDoc(collection(db, 'custom_categories'), removeUndefinedFields({
       ...category,
       createdAt: serverTimestamp(),
-    });
+    }));
     
     const docSnap = await getDoc(docRef);
     return {
@@ -288,7 +301,7 @@ export const categoriesService = {
   // Atualizar categoria
   update: async (id: string, updates: Partial<CustomCategory>): Promise<CustomCategory> => {
     const categoryRef = doc(db, 'custom_categories', id);
-    await updateDoc(categoryRef, updates);
+    await updateDoc(categoryRef, removeUndefinedFields(updates));
     
     const docSnap = await getDoc(categoryRef);
     return {
@@ -325,11 +338,11 @@ export const scheduledExpensesService = {
 
   // Criar despesa agendada
   create: async (expense: Omit<ScheduledExpense, 'id' | 'createdAt'>): Promise<ScheduledExpense> => {
-    const docRef = await addDoc(collection(db, 'scheduled_expenses'), {
+    const docRef = await addDoc(collection(db, 'scheduled_expenses'), removeUndefinedFields({
       ...expense,
       scheduledDate: stringToTimestamp(expense.scheduledDate),
       createdAt: serverTimestamp(),
-    });
+    }));
     
     const docSnap = await getDoc(docRef);
     return {
@@ -349,7 +362,7 @@ export const scheduledExpensesService = {
       updateData.scheduledDate = stringToTimestamp(updates.scheduledDate);
     }
     
-    await updateDoc(expenseRef, updateData);
+    await updateDoc(expenseRef, removeUndefinedFields(updateData));
     
     const docSnap = await getDoc(expenseRef);
     return {

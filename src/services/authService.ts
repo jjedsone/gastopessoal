@@ -40,11 +40,12 @@ export const authService = {
       const firebaseUser = userCredential.user;
 
       // Criar documento do usuário no Firestore
+      // Só incluir partnerId se tiver valor válido
       const userData: Omit<User, 'id'> = {
         name: data.name,
         username: username,
         type: data.type,
-        partnerId: data.partnerId,
+        ...(data.partnerId && { partnerId: data.partnerId }),
       };
 
       const user = await usersService.create(firebaseUser.uid, userData);
