@@ -32,14 +32,9 @@ export const authService = {
     try {
       // Gerar username se não fornecido
       const username = data.username || generateUsername(data.name);
-      
-      // Verificar se username já existe
-      const existingUser = await usersService.getByUsername(username);
-      if (existingUser) {
-        throw new Error('Nome de usuário já está em uso');
-      }
 
       // Criar usuário no Firebase Auth usando email baseado em username
+      // O Firebase Auth já previne emails duplicados, então não precisamos verificar username antes
       const email = usernameToEmail(username);
       const userCredential = await createUserWithEmailAndPassword(auth, email, data.password);
       const firebaseUser = userCredential.user;
@@ -62,6 +57,9 @@ export const authService = {
       console.error('Erro no registro:', error);
       if (error.code === 'auth/email-already-in-use') {
         throw new Error('Nome de usuário já está em uso');
+      }
+      if (error.code === 'permission-denied' || error.message?.includes('permission')) {
+        throw new Error('Erro de permissão. Verifique se o Firestore está configurado corretamente.');
       }
       throw new Error(error.message || 'Erro ao criar conta');
     }
