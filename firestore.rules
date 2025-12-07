@@ -4,73 +4,9 @@ service cloud.firestore {
 
   match /databases/{database}/documents {
 
-    // Regras para usuários - permitir leitura/escrita para autenticação via JWT
+    match /{document=**} {
 
-    // As Functions usam JWT, então permitimos acesso autenticado via backend
-
-    match /users/{userId} {
-
-      // Permitir leitura/escrita apenas para o próprio usuário ou via backend (Functions)
-
-      allow read: if request.auth != null && request.auth.uid == userId;
-
-      allow write: if request.auth != null && request.auth.uid == userId;
-
-      // Permitir criação via backend (sem auth do Firebase, mas com validação no backend)
-
-      allow create: if true; // Backend valida autenticação via JWT
-
-    }
-
-    
-
-    // Regras para transações - acesso via backend (JWT)
-
-    match /transactions/{transactionId} {
-
-      // Backend valida autenticação via JWT, então permitimos acesso autenticado
-
-      allow read, write: if true; // Backend valida userId via JWT
-
-    }
-
-    
-
-    // Regras para orçamentos - acesso via backend (JWT)
-
-    match /budgets/{budgetId} {
-
-      allow read, write: if true; // Backend valida userId via JWT
-
-    }
-
-    
-
-    // Regras para metas financeiras - acesso via backend (JWT)
-
-    match /financial_goals/{goalId} {
-
-      allow read, write: if true; // Backend valida userId via JWT
-
-    }
-
-    
-
-    // Regras para categorias personalizadas - acesso via backend (JWT)
-
-    match /custom_categories/{categoryId} {
-
-      allow read, write: if true; // Backend valida userId via JWT
-
-    }
-
-    
-
-    // Regras para despesas agendadas - acesso via backend (JWT)
-
-    match /scheduled_expenses/{expenseId} {
-
-      allow read, write: if true; // Backend valida userId via JWT
+      allow read, write: if request.auth != null;
 
     }
 
