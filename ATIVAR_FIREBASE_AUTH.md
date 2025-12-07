@@ -7,7 +7,9 @@ Se você está vendo este erro:
 FirebaseError: Firebase: Error (auth/configuration-not-found)
 ```
 
-Isso significa que o **Firebase Authentication não está ativado** no seu projeto.
+Isso significa que o **Firebase Authentication não está ativado** ou o **Email/Password não está habilitado** no seu projeto.
+
+⚠️ **IMPORTANTE**: Você precisa ativar especificamente o **Email/Password**, não apenas o Google Sign-In!
 
 ## ✅ Solução Passo a Passo (COM IMAGENS)
 
@@ -33,14 +35,17 @@ Ou navegue manualmente:
 1. Você verá a aba **"Sign-in method"** (Métodos de login) já selecionada
 2. Pule para o Passo 3
 
-### Passo 3: Ative o Provedor Email/Password
+### Passo 3: Ative o Provedor Email/Password ⚠️ ESSENCIAL
 
 1. Na lista de **"Sign-in providers"** (Provedores de login), encontre **"Email/Password"**
+   - ⚠️ **NÃO confunda com "Google"** - você precisa do Email/Password!
 2. Clique em **"Email/Password"**
 3. Uma janela modal abrirá com opções:
-   - **Toggle 1**: "Email/Password" - **ATIVE ESTE** ✅
+   - **Toggle 1**: "Email/Password" - **ATIVE ESTE** ✅ **OBRIGATÓRIO**
    - **Toggle 2**: "Email link (passwordless sign-in)" - Opcional (pode deixar desativado)
 4. Clique em **"Save"** (Salvar)
+
+**Nota**: Se você estiver vendo a configuração do Google Sign-In, isso é diferente! Você precisa voltar e encontrar "Email/Password" na lista de provedores.
 
 ### Passo 4: Verifique se Está Ativado
 
