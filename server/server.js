@@ -41,9 +41,19 @@ app.use('/api/goals', goalsRoutes);
 
 // Iniciar servidor
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  console.log(`📊 Banco de dados inicializado`);
-  console.log(`🔗 API disponível em http://localhost:${PORT}`);
+  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('🚀 Servidor Backend Iniciado');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log(`📍 Porta: ${PORT}`);
+  console.log(`🔗 API: http://localhost:${PORT}`);
+  console.log(`📊 Banco de dados: Inicializado`);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+  console.log('📋 Endpoints disponíveis:');
+  console.log(`   POST   http://localhost:${PORT}/api/auth/register`);
+  console.log(`   POST   http://localhost:${PORT}/api/auth/login`);
+  console.log(`   GET    http://localhost:${PORT}/api/auth/verify`);
+  console.log(`   GET    http://localhost:${PORT}/health`);
+  console.log('\n✅ Servidor pronto para receber requisições!\n');
 });
 
 // Graceful shutdown

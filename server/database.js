@@ -9,7 +9,12 @@ try {
   usingFirestore = true;
   console.log('✅ Usando Firestore Database');
 } catch (error) {
-  console.warn('⚠️  Firestore não disponível, tentando SQLite...');
+  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('⚠️  Firestore não disponível');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('Motivo:', error.message);
+  console.log('\n💡 Tentando usar SQLite...');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
   
   // Tentar usar better-sqlite3
   try {
@@ -23,10 +28,22 @@ try {
     db = new Database(path.join(__dirname, 'finance.db'));
     usingSQLite = true;
     console.log('✅ Usando SQLite Database');
+    console.log('📁 Arquivo:', path.join(__dirname, 'finance.db'));
   } catch (error2) {
-    console.warn('⚠️  SQLite não disponível, usando armazenamento JSON');
+    console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('⚠️  SQLite não disponível');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('Motivo:', error2.message);
+    console.log('\n💡 Usando armazenamento JSON (modo desenvolvimento)');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    
     db = (await import('./database-simple.js')).default;
-    console.log('✅ Usando JSON Database (modo desenvolvimento)');
+    console.log('✅ Usando JSON Database');
+    console.log('📁 Arquivo: server/data.json');
+    console.log('\n💡 Para usar Firestore em produção:');
+    console.log('   1. Configure GOOGLE_APPLICATION_CREDENTIALS');
+    console.log('   2. Ou coloque firebase-service-account.json em server/');
+    console.log('   3. Ou configure variáveis de ambiente\n');
   }
 }
 

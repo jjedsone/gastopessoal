@@ -17,31 +17,55 @@ try {
     // Tentar usar credenciais do arquivo de serviço
     const serviceAccountPath = path.join(__dirname, 'firebase-service-account.json');
     
-      if (fs.existsSync(serviceAccountPath)) {
+    if (fs.existsSync(serviceAccountPath)) {
+      try {
         const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
         admin.initializeApp({
           credential: admin.credential.cert(serviceAccount),
           projectId: serviceAccount.project_id || 'gastopessoal-ac9aa',
         });
         initialized = true;
-      } else {
-        // Usar variáveis de ambiente ou inicialização padrão
-        const projectId = process.env.FIREBASE_PROJECT_ID || 'gastopessoal-ac9aa';
-        admin.initializeApp({
-          projectId: projectId,
-        });
-        initialized = true;
+        console.log('✅ Firestore inicializado com credenciais de serviço');
+      } catch (certError) {
+        console.warn('⚠️  Erro ao carregar credenciais de serviço:', certError.message);
+        throw new Error('Firestore não disponível - credenciais inválidas');
       }
+    } else {
+      // Tentar usar variável de ambiente GOOGLE_APPLICATION_CREDENTIALS
+      if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+        try {
+          admin.initializeApp({
+            projectId: process.env.FIREBASE_PROJECT_ID || 'gastopessoal-ac9aa',
+          });
+          initialized = true;
+          console.log('✅ Firestore inicializado com credenciais de ambiente');
+        } catch (envError) {
+          console.warn('⚠️  Erro ao inicializar com credenciais de ambiente:', envError.message);
+          throw new Error('Firestore não disponível - credenciais de ambiente inválidas');
+        }
+      } else {
+        // Sem credenciais disponíveis - não inicializar Firestore
+        throw new Error('Firestore não disponível - nenhuma credencial encontrada. Use SQLite ou JSON database para desenvolvimento local.');
+      }
+    }
   } else {
     initialized = true;
   }
   
   if (initialized) {
     db = admin.firestore();
-    console.log('✅ Firestore inicializado com sucesso');
+    // Testar conexão fazendo uma query simples
+    try {
+      await db.collection('_test').limit(1).get();
+      console.log('✅ Firestore conectado e funcionando');
+    } catch (testError) {
+      console.warn('⚠️  Firestore inicializado mas não consegue conectar:', testError.message);
+      throw new Error('Firestore não consegue conectar - verifique as credenciais');
+    }
   }
 } catch (error) {
   console.warn('⚠️  Firestore não disponível:', error.message);
+  console.log('💡 Usando fallback para SQLite ou JSON database');
   throw error;
 }
 
