@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useFinance } from '../context/FinanceContext';
 import { formatCurrency } from '../utils/format';
 import { TrendingUp, TrendingDown, DollarSign, Target, Calendar, BarChart3 } from 'lucide-react';
@@ -249,22 +250,22 @@ const Dashboard: React.FC = () => {
       <div className="quick-actions">
         <h3>Ações Rápidas</h3>
         <div className="actions-grid">
-          <a href="/transactions" className="action-card">
+          <Link to="/transactions" className="action-card">
             <span>➕</span>
             <span>Adicionar Transação</span>
-          </a>
-          <a href="/budgets" className="action-card">
+          </Link>
+          <Link to="/budgets" className="action-card">
             <span>🎯</span>
             <span>Criar Orçamento</span>
-          </a>
-          <a href="/ai-assistant" className="action-card">
+          </Link>
+          <Link to="/ai-assistant" className="action-card">
             <span>🤖</span>
             <span>Consultar IA</span>
-          </a>
-          <a href="/investments" className="action-card">
+          </Link>
+          <Link to="/investments" className="action-card">
             <span>📈</span>
             <span>Ver Investimentos</span>
-          </a>
+          </Link>
         </div>
       </div>
     </div>
