@@ -40,20 +40,37 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
             
             // Carregar transações e orçamentos do Firestore
             try {
+              console.log('🔄 Carregando dados do Firestore para usuário:', userData.id);
               const [transactionsData, budgetsData] = await Promise.all([
                 transactionsService.getAll(userData.id),
                 budgetsService.getAll(userData.id),
               ]);
               
+              console.log('✅ Transações carregadas:', transactionsData?.length || 0);
+              console.log('✅ Orçamentos carregados:', budgetsData?.length || 0);
+              
               if (Array.isArray(transactionsData)) {
                 setTransactions(transactionsData);
+              } else {
+                console.warn('⚠️ Transações não é um array:', transactionsData);
+                setTransactions([]);
               }
               if (Array.isArray(budgetsData)) {
                 setBudgets(budgetsData);
+              } else {
+                console.warn('⚠️ Orçamentos não é um array:', budgetsData);
+                setBudgets([]);
               }
-            } catch (error) {
-              console.error('Erro ao carregar dados do Firestore:', error);
+            } catch (error: any) {
+              console.error('❌ Erro ao carregar dados do Firestore:', error);
+              console.error('Detalhes do erro:', {
+                code: error.code,
+                message: error.message,
+                stack: error.stack
+              });
               // Continuar mesmo se não conseguir carregar dados
+              setTransactions([]);
+              setBudgets([]);
             }
           } else {
             setUser(null);
@@ -91,13 +108,20 @@ export const FinanceProvider: React.FC<{ children: ReactNode }> = ({ children })
     if (!user) throw new Error('Usuário não autenticado');
     
     try {
+      console.log('💾 Salvando transação no Firestore:', transaction);
       const newTransaction = await transactionsService.create({
         ...transaction,
         userId: user.id,
       });
+      console.log('✅ Transação salva com sucesso:', newTransaction.id);
       setTransactions([...transactions, newTransaction]);
-    } catch (error) {
-      console.error('Erro ao criar transação:', error);
+    } catch (error: any) {
+      console.error('❌ Erro ao criar transação:', error);
+      console.error('Detalhes do erro:', {
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
       throw error;
     }
   };

@@ -93,19 +93,55 @@ export const usersService = {
 export const transactionsService = {
   // Obter todas as transações do usuário
   getAll: async (userId: string): Promise<Transaction[]> => {
-    const q = query(
-      collection(db, 'transactions'),
-      where('userId', '==', userId),
-      orderBy('date', 'desc')
-    );
-    const querySnapshot = await getDocs(q);
-    
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      date: timestampToString(doc.data().date),
-      createdAt: timestampToString(doc.data().createdAt),
-    })) as Transaction[];
+    try {
+      console.log('🔍 Buscando transações para userId:', userId);
+      const q = query(
+        collection(db, 'transactions'),
+        where('userId', '==', userId),
+        orderBy('date', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      
+      console.log('📊 Transações encontradas:', querySnapshot.size);
+      
+      const transactions = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          date: timestampToString(data.date),
+          createdAt: timestampToString(data.createdAt),
+        } as Transaction;
+      });
+      
+      return transactions;
+    } catch (error: any) {
+      console.error('❌ Erro ao buscar transações:', error);
+      // Se o erro for por falta de índice, tentar sem orderBy
+      if (error.code === 'failed-precondition') {
+        console.warn('⚠️ Tentando buscar sem orderBy devido a índice ausente');
+        try {
+          const q = query(
+            collection(db, 'transactions'),
+            where('userId', '==', userId)
+          );
+          const querySnapshot = await getDocs(q);
+          return querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              date: timestampToString(data.date),
+              createdAt: timestampToString(data.createdAt),
+            } as Transaction;
+          }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        } catch (retryError) {
+          console.error('❌ Erro ao buscar transações (retry):', retryError);
+          throw retryError;
+        }
+      }
+      throw error;
+    }
   },
 
   // Criar transação
